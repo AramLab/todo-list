@@ -1,4 +1,4 @@
-CREATE TABLE scheduler (
+CREATE TABLE IF NOT EXISTS scheduler (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     date CHAR(8),
     title VARCHAR(256),
@@ -6,4 +6,4 @@ CREATE TABLE scheduler (
     repeat VARCHAR(128)
 );
 
-CREATE INDEX date_index on scheduler (date);
+CREATE INDEX IF NOT EXISTS date_index on scheduler (date);

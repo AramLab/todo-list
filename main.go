@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/AramLab/todo-list/database"
+	"github.com/AramLab/todo-list/handlers"
 )
 
 func main() {
@@ -36,6 +37,9 @@ func main() {
 	if install {
 		database.CreateDatabase()
 	}
+
+	// Обработчик для `/api/nextdate`.
+	http.HandleFunc("/api/nextdate", handlers.NextDateHandler)
 
 	// Обработчик для корневого URL, возвращающий `index.html`.
 	http.Handle("/", http.FileServer(http.Dir(webDir)))
