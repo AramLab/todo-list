@@ -70,15 +70,24 @@ func main() {
 	http.HandleFunc("/api/task", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
+			// Обработчик для `/api/task/{id}`.
 			h.GetTaskHandler(w, r)
 		case http.MethodPost:
+			// Обработчик для `/api/task`.
 			h.AddTaskHandler(w, r)
 		case http.MethodPut:
+			// Обработчик для `/api/task/{id}`.
 			h.PutTaskHandler(w, r)
+		case http.MethodDelete:
+			// Обработчик для `/api/task/{id}`
+			h.DeleteTaskHandler(w, r)
 		default:
 			http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
 		}
 	})
+
+	// Обработчик для `/api/task/done`.
+	http.HandleFunc("/api/task/done", h.DoneTaskHandler)
 
 	// Обработчик для корневого URL, возвращающий `index.html`.
 	http.Handle("/", http.FileServer(http.Dir(webDir)))

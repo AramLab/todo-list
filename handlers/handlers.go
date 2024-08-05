@@ -107,6 +107,8 @@ func (h *Handlers) AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 		"id": id,
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -221,6 +223,7 @@ func (h *Handlers) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 }
 
@@ -238,6 +241,7 @@ func (h *Handlers) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(task)
 }
 
@@ -301,7 +305,7 @@ func (h *Handlers) PutTaskHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Обновление задачи в базе данных.
+	// Обновляем задачу в базе данных.
 	_, err = h.DB.Exec("UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?",
 		newTask.Date, newTask.Title, newTask.Comment, newTask.Repeat, newTask.ID)
 	if err != nil {
@@ -310,5 +314,77 @@ func (h *Handlers) PutTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{}`))
+}
+
+func (h *Handlers) DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	// Проверка наличия `id`.
+	if id == "" {
+		http.Error(w, `{"error":"Не указан ID задачи"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Получаем задачу по `id`.
+	task, err := utils.GetTask(id, h.DB)
+	if err != nil {
+		http.Error(w, `{"error":"Задача не найдена"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Рассчитываем следующее время для периодической задачи.
+	if task.Repeat != "" {
+		task.Date, err = utils.NextDate(time.Now(), task.Date, task.Repeat)
+		if err != nil {
+			http.Error(w, `{"error":"Ошибка в работе функции NextDate()"}`, http.StatusInternalServerError)
+			return
+		}
+
+		// Обновляем дату задачи.
+		_, err = h.DB.Exec("UPDATE scheduler SET date = ? WHERE id = ?", task.Date, id)
+		if err != nil {
+			http.Error(w, `{"error":"Ошибка обновления даты задачи"}`, http.StatusInternalServerError)
+			return
+		}
+		// Удаляем одноразовую задачу.
+	} else {
+		_, err := h.DB.Exec("DELETE FROM scheduler WHERE id = ?", id)
+		if err != nil {
+			http.Error(w, `{"error":"Ошибка удаления задачи"}`, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{}`))
+}
+
+func (h *Handlers) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+
+	// Проверка наличия `id`.
+	if id == "" {
+		http.Error(w, `{"error":"Не указан ID задачи"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Получаем задачу по `id` и удостоверяемся в её наличии.
+	_, err := utils.GetTask(id, h.DB)
+	if err != nil {
+		http.Error(w, `{"error":"Задача не найдена"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Удаляем задачу из базы данных.
+	_, err = h.DB.Exec("DELETE FROM scheduler WHERE id = ?", id)
+	if err != nil {
+		http.Error(w, `{"error":"Ошибка удаления задачи"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{}`))
 }
