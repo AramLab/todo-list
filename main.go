@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	//"github.com/gorilla/mux"
-
 	"github.com/AramLab/todo-list/database"
 	"github.com/AramLab/todo-list/handlers"
 )
@@ -30,7 +28,7 @@ func main() {
 	port := "7540"
 
 	// Записываем в `appPath` путь к исполняемому файлу.
-	appPath, err := os.Executable()
+	appPath, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -53,19 +51,11 @@ func main() {
 	// Создание экземпляра Handlers с подключением к базе данных
 	h := handlers.NewHandlers(db)
 
-	//r := mux.NewRouter()
-
 	// Обработчик для `/api/nextdate`.
-	http.HandleFunc("/api/nextdate", h.NextDateHandler) //.Methods("GET")
-
-	// Обработчик для `/api/task`.
-	//http.HandleFunc("/api/task", h.AddTaskHandler) //.Methods("POST")
+	http.HandleFunc("/api/nextdate", h.NextDateHandler)
 
 	// Обработчик для `/api/tasks`.
-	http.HandleFunc("/api/tasks", h.GetTasksHandler) //.Methods("GET")
-
-	// Обработчик для `/api/task/{id}`.
-	//http.HandleFunc("/api/task", h.GetTaskHandler) //.Methods("GET")
+	http.HandleFunc("/api/tasks", h.GetTasksHandler)
 
 	http.HandleFunc("/api/task", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -96,7 +86,6 @@ func main() {
 	log.Printf("Starting server on :%s", port)
 	err = http.ListenAndServe(":"+port, nil)
 	if err != nil {
-		log.Println("ошибка запуска сервера")
 		log.Fatal(err)
 	}
 }
